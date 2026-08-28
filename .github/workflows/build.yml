@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-linux:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -30,17 +30,60 @@ jobs:
 
       - name: Package sandbox
         run: |
-          mkdir -p artifact/ai-slop-engine
-          cp build/ai_slop_sandbox artifact/ai-slop-engine/
-          cp README.md artifact/ai-slop-engine/
-          cp -r Assets artifact/ai-slop-engine/ 2>/dev/null || true
-          cp -r assets artifact/ai-slop-engine/ 2>/dev/null || true
-          printf '%s\n' 'AI Slop Engine Phase 1' 'Run: ./ai_slop_sandbox' > artifact/ai-slop-engine/README.txt
-          tar -czf ai-slop-engine-linux-x64.tar.gz -C artifact ai-slop-engine
+          mkdir -p artifact/ai-slop-engine-linux-x64
+          cp build/ai_slop_sandbox artifact/ai-slop-engine-linux-x64/
+          cp README.md artifact/ai-slop-engine-linux-x64/
+          cp -r Assets artifact/ai-slop-engine-linux-x64/ 2>/dev/null || true
+          cp -r assets artifact/ai-slop-engine-linux-x64/ 2>/dev/null || true
+          printf '%s\n' 'AI Slop Engine Phase 1 - Linux x64' 'Run: ./ai_slop_sandbox' > artifact/ai-slop-engine-linux-x64/README.txt
+          tar -czf ai-slop-engine-linux-x64.tar.gz -C artifact ai-slop-engine-linux-x64
 
-      - name: Upload engine artifact
+      - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
         with:
           name: ai-slop-engine-linux-x64
           path: ai-slop-engine-linux-x64.tar.gz
+          if-no-files-found: error
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install SDL2
+        shell: pwsh
+        run: |
+          vcpkg install sdl2:x64-windows
+          vcpkg integrate install
+
+      - name: Configure
+        shell: pwsh
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows
+
+      - name: Build
+        run: cmake --build build --config Debug --parallel
+
+      - name: Test
+        shell: pwsh
+        env:
+          SDL_VIDEODRIVER: dummy
+        run: ctest --test-dir build -C Debug --output-on-failure
+
+      - name: Package sandbox
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force artifact/ai-slop-engine-windows-x64 | Out-Null
+          Copy-Item build/Debug/ai_slop_sandbox.exe artifact/ai-slop-engine-windows-x64/
+          Copy-Item README.md artifact/ai-slop-engine-windows-x64/
+          if (Test-Path Assets) { Copy-Item Assets artifact/ai-slop-engine-windows-x64/ -Recurse }
+          if (Test-Path assets) { Copy-Item assets artifact/ai-slop-engine-windows-x64/ -Recurse }
+          Set-Content artifact/ai-slop-engine-windows-x64/README.txt "AI Slop Engine Phase 1 - Windows x64`r`nRun: ai_slop_sandbox.exe"
+          Compress-Archive -Path artifact/ai-slop-engine-windows-x64 -DestinationPath ai-slop-engine-windows-x64.zip
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-slop-engine-windows-x64
+          path: ai-slop-engine-windows-x64.zip
           if-no-files-found: error
