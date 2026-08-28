@@ -19,6 +19,8 @@ public:
     bool running = false;
 };
 
+Engine::Engine() : Engine(Config{}) {}
+
 Engine::Engine(Config config) : impl_(std::make_unique<Impl>(config)) {}
 
 Engine::~Engine() {
