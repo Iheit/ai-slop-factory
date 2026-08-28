@@ -2,9 +2,10 @@ name: Build
 
 on:
   push:
-    branches: [main]
+    branches: [main, phase-1-engine]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -26,3 +27,20 @@ jobs:
         env:
           SDL_VIDEODRIVER: dummy
         run: ctest --test-dir build --output-on-failure
+
+      - name: Package sandbox
+        run: |
+          mkdir -p artifact/ai-slop-engine
+          cp build/ai_slop_sandbox artifact/ai-slop-engine/
+          cp README.md artifact/ai-slop-engine/
+          cp -r Assets artifact/ai-slop-engine/ 2>/dev/null || true
+          cp -r assets artifact/ai-slop-engine/ 2>/dev/null || true
+          printf '%s\n' 'AI Slop Engine Phase 1' 'Run: ./ai_slop_sandbox' > artifact/ai-slop-engine/README.txt
+          tar -czf ai-slop-engine-linux-x64.tar.gz -C artifact ai-slop-engine
+
+      - name: Upload engine artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-slop-engine-linux-x64
+          path: ai-slop-engine-linux-x64.tar.gz
+          if-no-files-found: error
