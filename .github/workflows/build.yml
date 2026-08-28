@@ -75,6 +75,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force artifact/ai-slop-engine-windows-x64 | Out-Null
           Copy-Item build/Debug/ai_slop_sandbox.exe artifact/ai-slop-engine-windows-x64/
+          Copy-Item "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin/SDL2.dll" artifact/ai-slop-engine-windows-x64/
           Copy-Item README.md artifact/ai-slop-engine-windows-x64/
           if (Test-Path Assets) { Copy-Item Assets artifact/ai-slop-engine-windows-x64/ -Recurse }
           if (Test-Path assets) { Copy-Item assets artifact/ai-slop-engine-windows-x64/ -Recurse }
