@@ -17,7 +17,8 @@ public:
         bool vsync = true;
     };
 
-    explicit Engine(Config config = {});
+    Engine();
+    explicit Engine(Config config);
     ~Engine();
 
     Engine(const Engine&) = delete;
