@@ -2,25 +2,20 @@ import bpy
 import os
 import sys
 
-# One-click runner for the complete Creepy House asset library.
-# Run this file from Blender 5.1's Text Editor. It executes all ten batches.
+# Creepy House MEGA GENERATOR
+# Run this single file in Blender 5.1.x.
+# It runs all ten asset batches in order.
 
 
 def find_script_dir():
-    # When run from Blender's Text Editor, the text block retains its filepath.
     text = bpy.data.texts.get('generate_assets.py')
     if text and text.filepath:
         return os.path.dirname(bpy.path.abspath(text.filepath))
-
-    # Useful when this file is executed with Python/Blender from disk.
-    if '__file__' in globals() and globals()['__file__']:
-        return os.path.dirname(os.path.abspath(globals()['__file__']))
-
+    if globals().get('__file__'):
+        return os.path.dirname(os.path.abspath(__file__))
     blend_dir = os.path.dirname(bpy.data.filepath) if bpy.data.filepath else os.getcwd()
     candidate = os.path.join(blend_dir, 'blender_assets')
-    if os.path.isdir(candidate):
-        return candidate
-    return blend_dir
+    return candidate if os.path.isdir(candidate) else blend_dir
 
 
 SCRIPT_DIR = os.path.abspath(find_script_dir())
@@ -48,21 +43,33 @@ def run_batch(filename):
     print(f'=== Running {filename} ===')
     with open(path, 'r', encoding='utf-8') as handle:
         source = handle.read()
-    code = compile(source, path, 'exec')
     namespace = {
         '__name__': '__main__',
         '__file__': path,
         '__package__': None,
     }
-    exec(code, namespace, namespace)
+    exec(compile(source, path, 'exec'), namespace, namespace)
 
 
-print('=== Creepy House Asset Generator ===')
+print('=== CREEPY HOUSE MEGA GENERATOR ===')
 print(f'Script directory: {SCRIPT_DIR}')
-print(f'Output directory: {os.path.join(SCRIPT_DIR, "generated_assets")}')
+print(f'Batch count: {len(BATCHES)}')
 
-for batch in BATCHES:
-    run_batch(batch)
+failures = []
+for number, batch in enumerate(BATCHES, 1):
+    print(f'\n[{number}/{len(BATCHES)}] {batch}')
+    try:
+        run_batch(batch)
+        print(f'[{number}/{len(BATCHES)}] COMPLETE')
+    except Exception as exc:
+        failures.append((batch, repr(exc)))
+        print(f'[{number}/{len(BATCHES)}] ERROR: {exc}')
 
-print('=== COMPLETE ===')
-print('All assets were exported as isolated .blend files.')
+print('\n=== MEGA GENERATOR FINISHED ===')
+if failures:
+    print('The following batches failed:')
+    for batch, error in failures:
+        print(f' - {batch}: {error}')
+else:
+    print('All ten batches completed successfully.')
+print('Output folder:', os.path.join(SCRIPT_DIR, 'generated_assets'))
